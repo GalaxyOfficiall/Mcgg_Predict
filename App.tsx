@@ -38,7 +38,7 @@ export default function App() {
               MCGG PREDICT
             </h1>
           </div>
-          <p className="text-slate-400 mt-2">AI-Powered Gaming Assistant</p>
+          <p className="text-slate-400 mt-2">Zyren-Powered Gaming Assistant</p>
         </header>
 
         <nav className="mb-8 flex justify-center">
