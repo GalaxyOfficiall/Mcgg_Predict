@@ -1,5 +1,5 @@
-
 {
-  "name": "MCGG PREDICT",
-  "description": "An application to predict enemy fight sequences in MCGG, with additional AI-powered tools for image generation and chat."
+  "name": "Prediktor MCGG & Zyren-Ai",
+  "description": "Aplikasi prediksi Magic Chess dan asisten AI pintar Zyren-Ai.",
+  "requestFramePermissions": []
 }
