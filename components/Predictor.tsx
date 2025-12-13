@@ -134,7 +134,7 @@ const Predictor: React.FC = () => {
         <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-purple-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
           PREDIKTOR MCGG
         </h1>
-        <p className="text-[10px] text-blue-200 mt-1 font-light tracking-widest uppercase">By Sheepown</p>
+        <p className="text-[10px] text-blue-200 mt-1 font-light tracking-widest uppercase">By Zyren</p>
       </motion.div>
 
       <AnimatePresence mode="wait">
