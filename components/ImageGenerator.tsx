@@ -1,107 +1,124 @@
-
 import React, { useState } from 'react';
-import { generateImage } from '../services/geminiService';
-import type { ImageSize } from '../types';
-import { SparklesIcon } from './Icons';
+import { generateImage } from '../services/gemini';
+import { motion } from 'framer-motion';
+import { Sparkles, Image as ImageIcon, Download, Loader2, AlertTriangle } from 'lucide-react';
 
-export const ImageGenerator: React.FC = () => {
-  const [prompt, setPrompt] = useState('');
-  const [size, setSize] = useState<ImageSize>('1K');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+const ImageGenerator: React.FC = () => {
+    const [prompt, setPrompt] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim()) return;
+    const handleGenerate = async () => {
+        if (!prompt.trim() || isLoading) return;
 
-    setIsLoading(true);
-    setError(null);
-    setImageUrl(null);
+        setIsLoading(true);
+        setGeneratedImage(null);
+        setError(null);
 
-    try {
-      const url = await generateImage(prompt, size);
-      setImageUrl(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        try {
+            const imageUrl = await generateImage(prompt);
+            if (imageUrl) {
+                setGeneratedImage(imageUrl);
+            } else {
+                throw new Error("Gagal membuat gambar, coba deskripsi lain.");
+            }
+        } catch (e: any) {
+            setError(e.message || "Terjadi kesalahan yang tidak diketahui.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const SIZES: ImageSize[] = ['1K', '2K', '4K'];
+    const handleDownload = () => {
+        if (!generatedImage) return;
+        const link = document.createElement('a');
+        link.href = generatedImage;
+        link.download = `${prompt.slice(0, 20).replace(/\s/g, '_')}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleGenerate();
+        }
+    };
 
-  return (
-    <div className="max-w-2xl mx-auto bg-slate-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-slate-700/50 animate-fade-in-up">
-      <h2 className="text-2xl font-bold text-center mb-6 text-fuchsia-400">Image Generator</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="prompt" className="block text-sm font-medium text-slate-400 mb-1">
-            Prompt
-          </label>
-          <textarea
-            id="prompt"
-            rows={3}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="e.g., A neon hologram of a cat driving at top speed"
-            className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 transition duration-200"
-          />
-        </div>
+    return (
+        <div className="flex flex-col h-[calc(100vh-140px)] relative max-w-lg mx-auto">
+            <motion.div 
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="text-center mb-6"
+            >
+                <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-white to-orange-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                IMAGE AI GENERATOR
+                </h1>
+                <p className="text-[10px] text-orange-200 mt-1 font-light tracking-widest uppercase">Ubah Teks Menjadi Gambar</p>
+            </motion.div>
 
-        <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Image Size</label>
-            <div className="flex justify-center gap-2 bg-slate-700/50 p-1 rounded-lg">
-                {SIZES.map(s => (
+            {/* Result Display */}
+            <div className="flex-1 flex items-center justify-center p-2">
+                <div className="w-full aspect-square bg-black/30 rounded-2xl border border-white/10 shadow-xl flex items-center justify-center overflow-hidden">
+                    {isLoading ? (
+                         <motion.div initial={{opacity:0}} animate={{opacity:1}} className="text-center text-white/70 space-y-3">
+                            <Loader2 size={40} className="mx-auto animate-spin text-orange-400" />
+                            <p className="font-semibold">AI sedang melukis...</p>
+                            <p className="text-xs max-w-xs mx-auto opacity-50">" {prompt} "</p>
+                        </motion.div>
+                    ) : error ? (
+                         <motion.div initial={{opacity:0}} animate={{opacity:1}} className="text-center text-red-400 p-4">
+                            <AlertTriangle size={32} className="mx-auto mb-2"/>
+                            <p className="font-semibold text-red-300">Oops, Gagal!</p>
+                            <p className="text-xs mt-1">{error}</p>
+                        </motion.div>
+                    ) : generatedImage ? (
+                        <motion.div initial={{opacity:0, scale:0.9}} animate={{opacity:1, scale:1}} className="w-full h-full relative group">
+                            <img src={generatedImage} alt={prompt} className="w-full h-full object-contain" />
+                            <button 
+                                onClick={handleDownload}
+                                className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/80">
+                                <Download size={20} />
+                            </button>
+                        </motion.div>
+                    ) : (
+                        <div className="text-center text-white/40 p-4">
+                            <ImageIcon size={40} className="mx-auto mb-3" />
+                            <p className="font-semibold">Hasil gambar akan muncul di sini</p>
+                            <p className="text-xs mt-1">Tulis deskripsi di bawah dan biarkan AI berkreasi.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="mt-4">
+                <motion.div 
+                    layout 
+                    className="bg-glass-dark/90 backdrop-blur-xl border border-white/20 rounded-2xl p-1.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] flex items-end gap-1.5"
+                >
+                    <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Contoh: Kucing astronot di bulan..."
+                        className="flex-1 w-full bg-transparent text-white placeholder-gray-500 text-sm py-2 px-3 outline-none resize-none max-h-20 scrollbar-hide font-medium"
+                        rows={2}
+                    />
                     <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSize(s)}
-                        className={`w-full py-2 text-sm font-semibold rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-offset-2 focus:ring-offset-slate-800 ${size === s ? 'bg-fuchsia-500 text-white' : 'text-slate-300 hover:bg-slate-600/50'}`}
+                        onClick={handleGenerate}
+                        disabled={!prompt.trim() || isLoading}
+                        className="p-2.5 h-full bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-orange-500/30 disabled:opacity-50 disabled:shadow-none transition-all duration-300 active:scale-95"
                     >
-                        {s}
+                        <Sparkles size={18} />
                     </button>
-                ))}
+                </motion.div>
             </div>
         </div>
-
-        <button
-          type="submit"
-          disabled={isLoading || !prompt.trim()}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-fuchsia-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300 transform hover:scale-105"
-        >
-          {isLoading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Generating...
-            </>
-          ) : (
-            <>
-                <SparklesIcon className="w-5 h-5" />
-                Generate
-            </>
-          )}
-        </button>
-      </form>
-
-      {error && (
-        <div className="mt-6 p-4 bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg">
-          <p className="font-semibold">Error</p>
-          <p>{error}</p>
-        </div>
-      )}
-
-      {imageUrl && (
-        <div className="mt-6 animate-fade-in">
-          <h3 className="text-lg font-semibold mb-2 text-center">Result</h3>
-          <div className="bg-black rounded-lg overflow-hidden shadow-lg border border-slate-700">
-            <img src={imageUrl} alt={prompt} className="w-full h-auto" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    );
 };
+
+export default ImageGenerator;
